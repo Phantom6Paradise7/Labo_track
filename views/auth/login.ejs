@@ -3,7 +3,7 @@
 <div style="max-width: 480px; margin: 2rem auto;">
   <div class="card" style="padding: 2rem; border-top: 4px solid var(--primary-600);">
     <div style="text-align: center; margin-bottom: 1.75rem;">
-      <div class="mono-label">AUTHORIZED ACCESS</div>
+      <div class="mono-label">PORTAL LOGIN</div>
       <h2 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--stone-900); margin-top: 0.5rem;">
         Sign in to LaboTrack
       </h2>
@@ -16,6 +16,7 @@
     <div id="frontendPasswordError" class="alert alert-danger" style="display: none; padding: 0.65rem 1rem; font-size: 0.8125rem;"></div>
 
     <form id="loginForm" action="/auth/login" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="form-group">
         <label class="form-label" for="role">Select Designated Role *</label>
         <select class="form-control filter-select" id="role" name="role" required style="width: 100%;">
@@ -46,10 +47,11 @@
       </button>
     </form>
 
-    <!-- Quick Demo Role Switcher for instant evaluation -->
+    <!-- Quick Demo Role Switcher (Visible ONLY in non-production / development) -->
+    <% if (typeof showDemoCreds !== 'undefined' ? showDemoCreds : (process.env.NODE_ENV !== 'production' || process.env.SHOW_DEMO_CREDS === 'true')) { %>
     <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px dashed var(--stone-200);">
       <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--stone-400); text-transform: uppercase; margin-bottom: 8px; text-align: center;">
-        ⚡ 1-Click Demo Credentials
+        ⚡ 1-Click Demo Credentials (Dev Only)
       </div>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
         <button type="button" class="btn btn-sm btn-secondary" onclick="fillDemo('admin@labotrack.edu', 'AdminPassword123!', 'admin')">
@@ -63,6 +65,7 @@
         </button>
       </div>
     </div>
+    <% } %>
 
     <div style="text-align: center; margin-top: 1.5rem; font-size: 0.8125rem; color: var(--stone-500);">
       Don't have an account? <a href="/auth/register" style="color: var(--primary-600); font-weight: 600; text-decoration: none;">Join Lab Portal</a>

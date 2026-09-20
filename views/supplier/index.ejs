@@ -131,6 +131,7 @@
 
                 <!-- Replenish Quantity Form -->
                 <form action="/supplier/replenish" method="POST" style="display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+                  <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                   <input type="hidden" name="assetId" value="<%= asset._id %>">
                   <span style="font-size: 0.75rem; color: var(--stone-500); font-weight: 600;">+</span>
                   <input
@@ -155,6 +156,7 @@
 
                 <!-- Delete Stock Item Button -->
                 <form action="/supplier/delete/<%= asset._id %>" method="POST" style="display: inline; margin: 0;">
+                  <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                   <button
                     type="submit"
                     class="btn btn-sm btn-outline-danger"
@@ -187,6 +189,7 @@
     </div>
 
     <form action="/supplier/new" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="modal-body">
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
           <div class="form-group">
@@ -274,6 +277,7 @@
     </div>
 
     <form id="editStockForm" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label" for="editName">Equipment Name *</label>
@@ -365,6 +369,7 @@
     </div>
 
     <form action="/supplier/replenish" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="modal-body">
         <input type="hidden" id="replenishAssetId" name="assetId">
 

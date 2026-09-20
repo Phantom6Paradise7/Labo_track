@@ -21,6 +21,7 @@
     </div>
 
     <form action="/requests/new" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <!-- Equipment Selector / Display -->
       <div class="form-group">
         <label class="form-label" for="assetId">Target Equipment / Instrument *</label>

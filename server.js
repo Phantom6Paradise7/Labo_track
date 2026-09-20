@@ -10,6 +10,7 @@ const { connectDB } = require('./config/db');
 const { initMemoryStore } = require('./models/store');
 const { populateUserLocals } = require('./middleware/auth');
 const { preventInjection } = require('./middleware/security');
+const { csrfProtection } = require('./middleware/csrf');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -71,6 +72,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Populate session user in all templates
 app.use(populateUserLocals);
 
+// State-changing CSRF protection
+app.use(csrfProtection);
+
 // Mount application routes
 app.use('/', dashboardRoutes);
 app.use('/auth', authRoutes);
@@ -121,6 +125,9 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
+app.startServer = startServer;
 module.exports = app;

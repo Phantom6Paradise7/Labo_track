@@ -21,6 +21,7 @@
     </div>
 
     <form action="/assets?from=<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <input type="hidden" name="from" value="<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>">
       <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
         <div class="form-group">

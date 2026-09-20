@@ -130,6 +130,15 @@ class IssueRequestProxy {
     return Array.isArray(docs) ? created : created[0];
   }
 
+  static async findByIdAndDelete(id) {
+    if (isLiveMongo()) return MongooseIssueRequest.findByIdAndDelete(id);
+    const idx = store.memoryRequests.findIndex(r => r._id.toString() === id.toString());
+    if (idx !== -1) {
+      return store.memoryRequests.splice(idx, 1)[0];
+    }
+    return null;
+  }
+
   static async deleteMany(query) {
     if (isLiveMongo()) return MongooseIssueRequest.deleteMany(query);
     store.memoryRequests.length = 0;

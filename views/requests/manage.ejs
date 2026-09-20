@@ -109,9 +109,11 @@
               <% if (req.status === 'Pending') { %>
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                   <form action="/requests/<%= req._id %>/approve" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                     <button type="submit" class="btn btn-sm btn-primary">Approve</button>
                   </form>
                   <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                     <input type="hidden" name="reason" value="Declined by Lab In-charge">
                     <button type="submit" class="btn btn-sm btn-outline-danger">Decline</button>
                   </form>
@@ -119,11 +121,13 @@
               <% } else if (req.status === 'Approved') { %>
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                   <form action="/requests/<%= req._id %>/issue" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                     <button type="submit" class="btn btn-sm btn-primary" title="Record physical handover and decrement stock count">
                       Record Handover / Issue
                     </button>
                   </form>
                   <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                     <input type="hidden" name="reason" value="Handover declined by Lab In-charge">
                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Decline equipment handover">
                       Decline Handover
@@ -136,6 +140,7 @@
                     Record Return & Triage
                   </button>
                   <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                     <input type="hidden" name="reason" value="Handover revoked / inspection failed by Lab In-charge">
                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke handover and return items to stock">
                       Decline Handover
@@ -169,6 +174,7 @@
     </div>
 
     <form id="returnForm" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label" for="returnCondition">Equipment Return Condition *</label>
@@ -207,6 +213,7 @@
     </div>
 
     <form id="rejectForm" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label" for="rejectionReason">Reason for Declining</label>

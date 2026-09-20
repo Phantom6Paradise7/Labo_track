@@ -164,16 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (errorBanner) errorBanner.style.display = 'none';
 
       try {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
         const response = await fetch('/requests/batch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-CSRF-Token': csrfToken
           },
           body: JSON.stringify({
             items: window.__laboTrackInspectQueue,
             purpose,
-            expectedReturnDate: returnDate
+            expectedReturnDate: returnDate,
+            _csrf: csrfToken
           })
         });
 

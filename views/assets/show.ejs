@@ -41,6 +41,7 @@
     <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supplier' || currentUser.role === 'lab_incharge')) { %>
       <a href="/assets/<%= asset._id %>/edit" class="btn btn-secondary btn-sm">Edit Asset</a>
       <form action="/assets/<%= asset._id %>/delete" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this asset from inventory?');" style="display: inline;">
+        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
         <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
       </form>
     <% } %>
@@ -196,6 +197,7 @@
         <button type="button" onclick="document.getElementById('addMaintenanceModal').classList.remove('open')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer;">&times;</button>
       </div>
       <form action="/assets/maintenance" method="POST">
+        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
         <div class="modal-body">
           <input type="hidden" name="assetId" value="<%= asset._id %>">
 
