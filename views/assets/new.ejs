@@ -1,0 +1,123 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <a href="/assets">Catalog</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">New Asset</span>
+</div>
+
+<div style="max-width: 720px; margin: 0 auto;">
+  <div class="card" style="padding: 2rem;">
+    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--stone-100);">
+      <span class="mono-label">ADMINISTRATION</span>
+      <h1 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--stone-900); margin-top: 0.35rem;">
+        Register New Laboratory Equipment
+      </h1>
+      <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+        Add an apparatus or instrument to the institutional asset tracking system.
+      </p>
+    </div>
+
+    <form action="/assets?from=<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>" method="POST">
+      <input type="hidden" name="from" value="<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>">
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="assetTag">Asset Tag / Identifier *</label>
+          <input type="text" class="form-control" id="assetTag" name="assetTag" placeholder="e.g. OSC-0099" required style="font-family: var(--font-mono); text-transform: uppercase;">
+          <small style="color: var(--stone-400); font-size: 0.725rem;">Must be unique across all labs.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="name">Equipment Full Name *</label>
+          <input type="text" class="form-control" id="name" name="name" placeholder="e.g. High-Precision Digital Analytical Balance" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="category">Category *</label>
+          <select class="form-control filter-select" id="category" name="category" required style="width: 100%;">
+            <option value="Analytical Instruments">Analytical Instruments</option>
+            <option value="Centrifuges">Centrifuges</option>
+            <option value="Microscopy">Microscopy</option>
+            <option value="Liquid Handling">Liquid Handling</option>
+            <option value="Safety & Containment">Safety & Containment</option>
+            <option value="Spectrometry">Spectrometry</option>
+            <option value="General Lab Equipment">General Lab Equipment</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="condition">Initial Condition *</label>
+          <select class="form-control filter-select" id="condition" name="condition" required style="width: 100%;">
+            <option value="Good" selected>Good (Operational)</option>
+            <option value="Fair">Fair (Operational with wear)</option>
+            <option value="Poor">Poor (Degraded)</option>
+            <option value="Repair">Repair Required</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="labLocation">Lab / Facility Location *</label>
+          <input type="text" class="form-control" id="labLocation" name="labLocation" placeholder="e.g. Lab A-12 (Main Hall)" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quantity">Initial Quantity *</label>
+          <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="1" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="building">Building</label>
+          <input type="text" class="form-control" id="building" name="building" value="BioScience Complex">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="floor">Floor</label>
+          <input type="text" class="form-control" id="floor" name="floor" value="Floor 2">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="room">Room</label>
+          <input type="text" class="form-control" id="room" name="room" value="Room 204">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="manufacturer">Manufacturer</label>
+          <input type="text" class="form-control" id="manufacturer" name="manufacturer" placeholder="e.g. Eppendorf / Olympus">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modelNumber">Model Number</label>
+          <input type="text" class="form-control" id="modelNumber" name="modelNumber" placeholder="e.g. 5430R">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="purchaseCost">Purchase Cost ($)</label>
+          <input type="number" step="0.01" class="form-control" id="purchaseCost" name="purchaseCost" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Detailed Description</label>
+        <textarea class="form-control" id="description" name="description" rows="2" placeholder="Brief technical summary..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="specifications">Specifications / Operational Notes</label>
+        <textarea class="form-control" id="specifications" name="specifications" rows="2" placeholder="Voltage, speed, wavelength, tolerances..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--stone-100);">
+        <a href="<%= (typeof from !== 'undefined' && from === 'catalog') ? '/assets' : '/supplier' %>" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create & Register Asset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

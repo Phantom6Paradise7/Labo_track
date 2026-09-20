@@ -1,0 +1,204 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Equipment Catalog</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <div class="mono-label">INVENTORY DISCOVERY</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      Research Assets & Instruments
+    </h1>
+    <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      Explore institutional apparatus across labs. Requesters can stage equipment for checkout.
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supplier' || currentUser.role === 'lab_incharge')) { %>
+      <a href="/assets/new?from=catalog" class="btn btn-primary btn-sm">+ Add New Stock Item</a>
+    <% } %>
+  </div>
+</div>
+
+<!-- Search & Filter Bar (Labotrack / Scispot style) -->
+<form action="/assets" method="GET" class="filter-bar">
+  <input
+    type="text"
+    name="search"
+    value="<%= currentFilter.search %>"
+    class="search-input"
+    placeholder="Search assets by tag (OSC-0042), name, manufacturer, or lab room..."
+  >
+
+  <select name="category" class="filter-select" onchange="this.form.submit()">
+    <option value="All" <%= currentFilter.category === 'All' ? 'selected' : '' %>>All Categories</option>
+    <% categories.forEach(cat => { %>
+      <option value="<%= cat %>" <%= currentFilter.category === cat ? 'selected' : '' %>><%= cat %></option>
+    <% }) %>
+  </select>
+
+  <select name="condition" class="filter-select" onchange="this.form.submit()">
+    <option value="All" <%= currentFilter.condition === 'All' ? 'selected' : '' %>>All Conditions</option>
+    <option value="Good" <%= currentFilter.condition === 'Good' ? 'selected' : '' %>>Good</option>
+    <option value="Fair" <%= currentFilter.condition === 'Fair' ? 'selected' : '' %>>Fair</option>
+    <option value="Poor" <%= currentFilter.condition === 'Poor' ? 'selected' : '' %>>Poor</option>
+    <option value="Repair" <%= currentFilter.condition === 'Repair' ? 'selected' : '' %>>Needs Repair</option>
+  </select>
+
+  <select name="location" class="filter-select" onchange="this.form.submit()">
+    <option value="All" <%= currentFilter.location === 'All' ? 'selected' : '' %>>All Lab Locations</option>
+    <% locations.forEach(loc => { %>
+      <option value="<%= loc %>" <%= currentFilter.location === loc ? 'selected' : '' %>><%= loc %></option>
+    <% }) %>
+  </select>
+
+  <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+  <% if (currentFilter.search || currentFilter.category !== 'All' || currentFilter.condition !== 'All' || currentFilter.location !== 'All') { %>
+    <a href="/assets" class="btn btn-sm btn-secondary" style="color: var(--stone-500);" title="Reset filters">Reset</a>
+  <% } %>
+</form>
+
+<!-- Assets Data Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Asset Code</th>
+          <th>Equipment Name</th>
+          <th>Category</th>
+          <th>Location</th>
+          <th>Condition</th>
+          <th>Availability</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (assets.length === 0) { %>
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 3rem; color: var(--stone-400);">
+              No assets found matching current filter query.
+            </td>
+          </tr>
+        <% } %>
+        <% assets.forEach(asset => { %>
+          <tr>
+            <td>
+              <span class="mono-tag" style="font-weight: 600; color: var(--stone-900);"><%= asset.assetTag %></span>
+            </td>
+            <td>
+              <a href="/assets/<%= asset._id %>" style="font-weight: 600; color: var(--stone-900); text-decoration: none;">
+                <%= asset.name %>
+              </a>
+              <div style="font-size: 0.75rem; color: var(--stone-400); margin-top: 2px;">
+                <%= asset.manufacturer || 'Standard' %> · Model: <%= asset.modelNumber || 'N/A' %>
+              </div>
+            </td>
+            <td>
+              <span class="mono-tag"><%= asset.category %></span>
+            </td>
+            <td>
+              <div style="font-size: 0.8125rem; font-weight: 500; color: var(--stone-700);"><%= asset.labLocation %></div>
+              <div style="font-size: 0.725rem; color: var(--stone-400);"><%= asset.building %> (<%= asset.room %>)</div>
+            </td>
+            <td>
+              <% if (asset.condition === 'Good') { %>
+                <span class="badge badge-good">Good</span>
+              <% } else if (asset.condition === 'Fair') { %>
+                <span class="badge badge-fair">Fair</span>
+              <% } else if (asset.condition === 'Repair') { %>
+                <span class="badge badge-repair">Repair</span>
+              <% } else { %>
+                <span class="badge badge-decom"><%= asset.condition %></span>
+              <% } %>
+            </td>
+            <td>
+              <% if (asset.availableQuantity > 0) { %>
+                <span class="badge badge-good">
+                  <%= asset.availableQuantity %> / <%= asset.quantity %> Units Free
+                </span>
+              <% } else { %>
+                <span class="badge badge-repair">Fully Issued (0 Free)</span>
+              <% } %>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <a href="/assets/<%= asset._id %>" data-asset-id="<%= asset._id %>" class="btn btn-sm btn-secondary" title="View Technical Details & Specs">Details</a>
+
+                <% if (currentUser && (currentUser.role === 'requester' || currentUser.role === 'staff' || currentUser.role === 'student')) { %>
+                  <% if (asset.availableQuantity > 0 && asset.condition !== 'Repair' && asset.condition !== 'Decommissioned') { %>
+                    <a href="/requests/new?assetId=<%= asset._id %>" class="btn btn-sm btn-primary" title="Request this apparatus for lab checkout">
+                      Request Equipment
+                    </a>
+                  <% } else { %>
+                    <button type="button" class="btn btn-sm btn-secondary" disabled title="Currently fully issued or undergoing repair">Unavailable</button>
+                  <% } %>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DevTools Inspect Staging Modal (Array formed in memory; DB written only on promise) -->
+<div id="requestEquipmentModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="mono-label">REQUISITION STAGING</span>
+        <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+          Request Equipment Issue
+        </h3>
+      </div>
+      <button type="button" id="closeModalBtn" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-500);">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div id="modalErrorBanner" class="alert alert-danger" style="display: none; padding: 0.65rem 1rem; font-size: 0.8125rem; margin-bottom: 1rem;"></div>
+
+      <div style="background: var(--stone-50); border: 1px solid var(--stone-200); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem;">
+        <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Selected Asset:</div>
+        <div style="font-weight: 700; font-size: 1rem; color: var(--stone-900);" id="modalAssetName"></div>
+        <div style="display: flex; gap: 12px; margin-top: 4px; font-size: 0.75rem; color: var(--stone-600);">
+          <span>Tag: <strong id="modalAssetTag" class="mono-tag" style="color: var(--stone-800);"></strong></span>
+          <span>Available: <strong id="modalAvailableQty" style="color: var(--status-good);"></strong> unit(s)</span>
+        </div>
+      </div>
+
+      <form id="stagingSubmitForm" style="margin-top: 1rem;">
+        <input type="hidden" id="modalAssetId">
+
+        <div class="form-group">
+          <label class="form-label" for="modalQuantity">Quantity Required *</label>
+          <input type="number" id="modalQuantity" class="form-control" min="1" value="1" required>
+          <small style="color: var(--stone-400); font-size: 0.725rem;">Cannot exceed currently available units.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modalPurpose">Research / Laboratory Purpose *</label>
+          <textarea id="modalPurpose" class="form-control" rows="3" placeholder="Describe thesis chapter, experimental run, or coursework lab protocol..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modalReturnDate">Expected Return Date *</label>
+          <input type="date" id="modalReturnDate" class="form-control" required>
+          <small style="color: var(--stone-400); font-size: 0.725rem;">Required return date for automatic overdue tracking.</small>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" id="cancelRequestBtn" class="btn btn-secondary btn-sm">Cancel</button>
+      <button type="button" id="submitRequestBtn" class="btn btn-primary btn-sm">Confirm & Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

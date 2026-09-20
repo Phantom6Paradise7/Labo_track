@@ -1,0 +1,289 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <a href="/assets">Catalog</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;"><%= asset.assetTag %></span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="mono-label"><%= asset.category %></span>
+      <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= asset.assetTag %></span>
+    </div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      <%= asset.name %>
+    </h1>
+    <div style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      Manufactured by <%= asset.manufacturer || 'N/A' %> · Model: <%= asset.modelNumber || 'N/A' %> · Serial: <%= asset.serialNumber || 'N/A' %>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <% if (currentUser && (currentUser.role === 'requester' || currentUser.role === 'staff' || currentUser.role === 'student')) { %>
+      <% if (asset.availableQuantity > 0 && asset.condition !== 'Repair' && asset.condition !== 'Decommissioned') { %>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm btn-stage-request"
+          data-asset-id="<%= asset._id %>"
+          data-asset-tag="<%= asset.assetTag %>"
+          data-asset-name="<%= (asset.name || '').replace(/"/g, '&quot;') %>"
+          data-available="<%= asset.availableQuantity %>"
+        >
+          Request This Asset
+        </button>
+      <% } %>
+    <% } %>
+
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supplier' || currentUser.role === 'lab_incharge')) { %>
+      <a href="/assets/<%= asset._id %>/edit" class="btn btn-secondary btn-sm">Edit Asset</a>
+      <form action="/assets/<%= asset._id %>/delete" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this asset from inventory?');" style="display: inline;">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+  <!-- Details & Specs -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Technical Specifications & Details</h3>
+      <div>
+        <% if (asset.condition === 'Good') { %>
+          <span class="badge badge-good">Condition: Good</span>
+        <% } else if (asset.condition === 'Fair') { %>
+          <span class="badge badge-fair">Condition: Fair</span>
+        <% } else if (asset.condition === 'Repair') { %>
+          <span class="badge badge-repair">Condition: Needs Repair</span>
+        <% } else { %>
+          <span class="badge badge-decom"><%= asset.condition %></span>
+        <% } %>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <h4 style="font-size: 0.775rem; font-family: var(--font-mono); text-transform: uppercase; color: var(--stone-400); margin-bottom: 0.35rem;">Description</h4>
+      <p style="font-size: 0.875rem; color: var(--stone-700); line-height: 1.6;">
+        <%= asset.description || 'No detailed descriptive overview recorded.' %>
+      </p>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+      <h4 style="font-size: 0.775rem; font-family: var(--font-mono); text-transform: uppercase; color: var(--stone-400); margin-bottom: 0.35rem;">Hardware Parameters & Specs</h4>
+      <p style="font-size: 0.875rem; color: var(--stone-700); background: var(--stone-50); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--stone-200); font-family: var(--font-mono);">
+        <%= asset.specifications || 'Standard manufacturer specifications apply.' %>
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--stone-100);">
+      <div>
+        <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Total Inventory</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--stone-900);"><%= asset.quantity %> Units</div>
+      </div>
+      <div>
+        <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Available Units</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--status-good);"><%= asset.availableQuantity %> Free</div>
+      </div>
+      <div>
+        <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Units Checked Out</div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: var(--status-issued);"><%= asset.quantity - asset.availableQuantity %> Issued</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Location & Vendor Card (ezo.io inspired) -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Facility Location</h3>
+    </div>
+
+    <div style="space-y: 12px;">
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Assigned Lab</div>
+        <div style="font-weight: 600; color: var(--stone-900);"><%= asset.labLocation %></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        <div>
+          <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Building</div>
+          <div style="font-size: 0.8125rem; color: var(--stone-700);"><%= asset.building %></div>
+        </div>
+        <div>
+          <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Floor & Room</div>
+          <div style="font-size: 0.8125rem; color: var(--stone-700);"><%= asset.floor %>, <%= asset.room %></div>
+        </div>
+      </div>
+
+      <div style="padding-top: 12px; border-top: 1px solid var(--stone-100); margin-bottom: 12px;">
+        <div style="font-size: 0.725rem; font-family: var(--font-mono); color: var(--stone-400); text-transform: uppercase;">Procurement / Supplier</div>
+        <div style="font-size: 0.8125rem; font-weight: 600; color: var(--stone-800);"><%= asset.supplierName || 'Verified Lab Vendor' %></div>
+        <div style="font-size: 0.75rem; color: var(--stone-500); margin-top: 2px;">
+          Cost: $<%= (asset.purchaseCost || 0).toFixed(2) %>
+        </div>
+      </div>
+
+      <!-- Barcode / QR Identifier Stamp -->
+      <div style="background: var(--stone-100); border: 1px dashed var(--stone-300); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 1.125rem; letter-spacing: 0.25em; font-weight: 700; color: var(--stone-800);">
+          ||| | |||| || ||| |
+        </div>
+        <div class="mono-tag" style="margin-top: 4px;"><%= asset.assetTag %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stretch Goal: Asset Maintenance Log Section -->
+<div class="card">
+  <div class="card-header">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="mono-label">STRETCH GOAL</span>
+      <h3 class="card-title" style="margin: 0;">Maintenance & Calibration Logs</h3>
+    </div>
+
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'lab_incharge')) { %>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('addMaintenanceModal').classList.add('open')">
+        + Record Service / Calibration
+      </button>
+    <% } %>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service Date</th>
+          <th>Type</th>
+          <th>Technician</th>
+          <th>Cost</th>
+          <th>Next Service Due</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (maintenanceLogs.length === 0) { %>
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--stone-400); padding: 2rem;">
+              No maintenance records logged for this equipment.
+            </td>
+          </tr>
+        <% } %>
+        <% maintenanceLogs.forEach(log => { %>
+          <tr>
+            <td><%= new Date(log.serviceDate).toLocaleDateString() %></td>
+            <td><strong><%= log.serviceType %></strong></td>
+            <td><%= log.technician %></td>
+            <td>$<%= (log.cost || 0).toFixed(2) %></td>
+            <td><strong style="color: var(--primary-700);"><%= new Date(log.nextServiceDue).toLocaleDateString() %></strong></td>
+            <td><%= log.notes || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Record Maintenance Log -->
+<% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'lab_incharge')) { %>
+  <div id="addMaintenanceModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="card-title" style="margin: 0;">Record Maintenance Log</h3>
+        <button type="button" onclick="document.getElementById('addMaintenanceModal').classList.remove('open')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer;">&times;</button>
+      </div>
+      <form action="/assets/maintenance" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="assetId" value="<%= asset._id %>">
+
+          <div class="form-group">
+            <label class="form-label">Service Type *</label>
+            <select name="serviceType" class="form-control" required>
+              <option value="Calibration">Calibration</option>
+              <option value="Preventative Inspection">Preventative Inspection</option>
+              <option value="Sensor Alignment">Sensor Alignment</option>
+              <option value="Emergency Repair">Emergency Repair</option>
+              <option value="Firmware Upgrade">Firmware Upgrade</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Technician / Vendor Name *</label>
+            <input type="text" name="technician" class="form-control" placeholder="e.g. Tektronix Certified Field Engineer" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label">Service Date *</label>
+              <input type="date" name="serviceDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cost ($)</label>
+              <input type="number" step="0.01" name="cost" class="form-control" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Next Service Due *</label>
+            <input type="date" name="nextServiceDue" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Notes & Diagnostic Results</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Voltage tolerance, optical alignment, replacements made..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('addMaintenanceModal').classList.remove('open')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Save Log Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<!-- Include Requisition Staging Modal -->
+<div id="requestEquipmentModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+        Request Equipment Issue
+      </h3>
+      <button type="button" id="closeModalBtn" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-500);">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalErrorBanner" class="alert alert-danger" style="display: none; padding: 0.65rem 1rem; font-size: 0.8125rem;"></div>
+      <div style="background: var(--stone-50); border: 1px solid var(--stone-200); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem;">
+        <div style="font-weight: 700; font-size: 1rem; color: var(--stone-900);" id="modalAssetName"></div>
+        <div style="display: flex; gap: 12px; margin-top: 4px; font-size: 0.75rem; color: var(--stone-600);">
+          <span>Tag: <strong id="modalAssetTag" class="mono-tag"></strong></span>
+          <span>Available: <strong id="modalAvailableQty" style="color: var(--status-good);"></strong> unit(s)</span>
+        </div>
+      </div>
+      <form id="stagingSubmitForm" style="margin-top: 1rem;">
+        <input type="hidden" id="modalAssetId">
+        <div class="form-group">
+          <label class="form-label" for="modalQuantity">Quantity Required *</label>
+          <input type="number" id="modalQuantity" class="form-control" min="1" value="1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modalPurpose">Research / Laboratory Purpose *</label>
+          <textarea id="modalPurpose" class="form-control" rows="3" placeholder="State purpose of requisition..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modalReturnDate">Expected Return Date *</label>
+          <input type="date" id="modalReturnDate" class="form-control" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" id="cancelRequestBtn" class="btn btn-secondary btn-sm">Cancel</button>
+      <button type="button" id="submitRequestBtn" class="btn btn-primary btn-sm">Confirm & Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

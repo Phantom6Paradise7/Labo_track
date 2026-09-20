@@ -1,0 +1,568 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Stock & Inventory Management</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <div class="mono-label">LAB IN-CHARGE & ADMIN STOCK DESK</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      Laboratory Stock & Inventory Management
+    </h1>
+    <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      Authorized Lab In-charges and Administrators can register new shipments, edit equipment details, replenish units, or manage inventory items.
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <script>
+      function openNewStockModal() {
+        const modal = document.getElementById('newStockModal');
+        if (modal) {
+          modal.classList.add('open');
+          modal.style.display = 'flex';
+          return true;
+        }
+        window.location.href = '/assets/new?from=supplier';
+        return false;
+      }
+      function closeNewStockModal() {
+        const modal = document.getElementById('newStockModal');
+        if (modal) {
+          modal.classList.remove('open');
+          modal.style.display = 'none';
+        }
+      }
+    </script>
+    <a href="/assets/new?from=supplier" class="btn btn-primary btn-sm" onclick="openNewStockModal(); return false;">
+      + Add New Stock Item
+    </a>
+  </div>
+</div>
+
+<!-- Supplier Metrics Grid -->
+<div class="metrics-grid">
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Stock Models in Catalog</div>
+    <div class="metric-value"><%= stats.totalItems %></div>
+    <div class="metric-sub">Active supply listings</div>
+  </div>
+
+  <div class="metric-card accent-blue">
+    <div class="metric-title">Total Units Supplied</div>
+    <div class="metric-value" style="color: var(--status-issued);"><%= stats.totalStockUnits %></div>
+    <div class="metric-sub">Physical apparatus in circulation</div>
+  </div>
+
+  <div class="metric-card <%= stats.lowStockCount > 0 ? 'accent-amber' : 'accent-emerald' %>">
+    <div class="metric-title">Low Stock Alert</div>
+    <div class="metric-value" style="color: <%= stats.lowStockCount > 0 ? 'var(--status-warning)' : 'var(--status-good)' %>;">
+      <%= stats.lowStockCount %>
+    </div>
+    <div class="metric-sub"><%= stats.lowStockCount > 0 ? 'Items with ≤ 2 units available' : 'Sufficient inventory levels' %></div>
+  </div>
+</div>
+
+<!-- Stock Items Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 1rem 1.25rem; margin-bottom: 0;">
+    <h3 class="card-title">Inventory Stock Catalog</h3>
+    <span class="mono-tag">Stock Modification, Editing & Deletion Enabled</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Asset Code</th>
+          <th>Equipment Name</th>
+          <th>Category</th>
+          <th>Lab Location</th>
+          <th>Total In Stock</th>
+          <th>Available Free</th>
+          <th>Unit Cost</th>
+          <th>Inventory Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (assets.length === 0) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--stone-400); padding: 3rem;">
+              No stock items in inventory. Use the button above to add equipment.
+            </td>
+          </tr>
+        <% } %>
+        <% assets.forEach(asset => { %>
+          <tr>
+            <td>
+              <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= asset.assetTag %></span>
+            </td>
+            <td>
+              <strong style="color: var(--stone-900);"><%= asset.name %></strong>
+              <div style="font-size: 0.75rem; color: var(--stone-400);"><%= asset.manufacturer || 'Lab Catalog' %> · <%= asset.modelNumber || 'N/A' %></div>
+            </td>
+            <td><span class="mono-tag"><%= asset.category %></span></td>
+            <td><span style="font-size: 0.8125rem;"><%= asset.labLocation %></span></td>
+            <td>
+              <strong style="font-size: 1rem;"><%= asset.quantity %></strong> units
+            </td>
+            <td>
+              <% if (asset.availableQuantity <= 2) { %>
+                <span class="badge badge-fair"><%= asset.availableQuantity %> Left (Low)</span>
+              <% } else { %>
+                <span class="badge badge-good"><%= asset.availableQuantity %> Available</span>
+              <% } %>
+            </td>
+            <td>$<%= (asset.purchaseCost || 0).toFixed(2) %></td>
+            <td>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <!-- Edit Item Button -->
+                <a
+                  href="/assets/<%= asset._id %>/edit?from=supplier"
+                  class="btn btn-sm btn-secondary"
+                  style="color: var(--primary-700); font-weight: 600; text-decoration: none; padding: 5px 10px;"
+                  title="Edit equipment specifications, total stock, and details"
+                >
+                  ✎ Edit
+                </a>
+
+                <!-- Replenish Quantity Form -->
+                <form action="/supplier/replenish" method="POST" style="display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+                  <input type="hidden" name="assetId" value="<%= asset._id %>">
+                  <span style="font-size: 0.75rem; color: var(--stone-500); font-weight: 600;">+</span>
+                  <input
+                    type="number"
+                    name="additionalQuantity"
+                    value="5"
+                    min="1"
+                    max="1000"
+                    style="width: 48px; padding: 4px 6px; font-size: 0.8125rem; font-family: var(--font-mono); font-weight: 600; text-align: center; border: 1px solid var(--stone-300); border-radius: var(--radius-sm);"
+                    title="Units to add to inventory"
+                    required
+                  >
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-secondary"
+                    style="font-weight: 600; color: var(--primary-800); padding: 5px 8px; white-space: nowrap;"
+                    title="Instantly add these units to stock"
+                  >
+                    + Replenish
+                  </button>
+                </form>
+
+                <!-- Delete Stock Item Button -->
+                <form action="/supplier/delete/<%= asset._id %>" method="POST" style="display: inline; margin: 0;">
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-danger"
+                    style="padding: 5px 8px;"
+                    title="Delete item from inventory"
+                  >
+                    Delete Stock
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Add New Stock Item -->
+<div id="newStockModal" class="modal-backdrop">
+  <div class="modal-dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="mono-label">VENDOR INTAKE</span>
+        <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+          Add New Equipment to Stock
+        </h3>
+      </div>
+      <button type="button" onclick="closeNewStockModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-400);">&times;</button>
+    </div>
+
+    <form action="/supplier/new" method="POST">
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="newAssetTag">Asset Tag *</label>
+            <input type="text" id="newAssetTag" name="assetTag" class="form-control" placeholder="e.g. VORT-0100" required style="font-family: var(--font-mono); text-transform: uppercase;">
+            <small style="color: var(--stone-400); font-size: 0.725rem;">Must be unique identifier.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newName">Equipment Name *</label>
+            <input type="text" id="newName" name="name" class="form-control" placeholder="e.g. High-Speed Multi-Tube Vortexer" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="newCategory">Category *</label>
+            <select id="newCategory" name="category" class="form-control filter-select" required>
+              <option value="Analytical Instruments">Analytical Instruments</option>
+              <option value="Centrifuges">Centrifuges</option>
+              <option value="Microscopy">Microscopy</option>
+              <option value="Liquid Handling">Liquid Handling</option>
+              <option value="Safety & Containment">Safety & Containment</option>
+              <option value="Spectrometry">Spectrometry</option>
+              <option value="General Lab Equipment" selected>General Lab Equipment</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newQuantity">Intake Quantity *</label>
+            <input type="number" id="newQuantity" name="quantity" class="form-control" min="1" value="5" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="newManufacturer">Manufacturer</label>
+            <input type="text" id="newManufacturer" name="manufacturer" class="form-control" placeholder="e.g. Fisherbrand / Corning">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newModel">Model Number</label>
+            <input type="text" id="newModel" name="modelNumber" class="form-control" placeholder="e.g. FB-VTX-200">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="newCost">Unit Price ($)</label>
+            <input type="number" step="0.01" id="newCost" name="purchaseCost" class="form-control" placeholder="450.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newLocation">Intake / Storage Location</label>
+            <input type="text" id="newLocation" name="labLocation" class="form-control" value="Central Supplies Core (Room 105)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newDesc">Description</label>
+          <textarea id="newDesc" name="description" class="form-control" rows="2" placeholder="Standard vendor supplies package..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newSpecs">Specifications</label>
+          <textarea id="newSpecs" name="specifications" class="form-control" rows="2" placeholder="Operational parameters, voltage, speed..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeNewStockModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Add to Stock Inventory</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Edit Existing Stock Item (Supplier Edit Feature) -->
+<div id="editStockModal" class="modal-backdrop">
+  <div class="modal-dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="mono-label">EDIT EQUIPMENT</span>
+        <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+          Edit Stock Item (<span id="editAssetTagSpan"></span>)
+        </h3>
+      </div>
+      <button type="button" onclick="document.getElementById('editStockModal').classList.remove('open')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-400);">&times;</button>
+    </div>
+
+    <form id="editStockForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="editName">Equipment Name *</label>
+          <input type="text" id="editName" name="name" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="editCategory">Category *</label>
+            <select id="editCategory" name="category" class="form-control filter-select" required>
+              <option value="Analytical Instruments">Analytical Instruments</option>
+              <option value="Centrifuges">Centrifuges</option>
+              <option value="Microscopy">Microscopy</option>
+              <option value="Liquid Handling">Liquid Handling</option>
+              <option value="Safety & Containment">Safety & Containment</option>
+              <option value="Spectrometry">Spectrometry</option>
+              <option value="General Lab Equipment">General Lab Equipment</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editCondition">Condition *</label>
+            <select id="editCondition" name="condition" class="form-control filter-select" required>
+              <option value="Good">Good (Operational)</option>
+              <option value="Fair">Fair (Operational with wear)</option>
+              <option value="Poor">Poor (Degraded)</option>
+              <option value="Repair">Needs Repair</option>
+              <option value="Decommissioned">Decommissioned</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="editLocation">Lab / Facility Location *</label>
+            <input type="text" id="editLocation" name="labLocation" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editQuantity">Total Quantity in Stock *</label>
+            <input type="number" id="editQuantity" name="quantity" class="form-control" min="0" required>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="editMfr">Manufacturer</label>
+            <input type="text" id="editMfr" name="manufacturer" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="editModel">Model Number</label>
+            <input type="text" id="editModel" name="modelNumber" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editCost">Unit Price / Value ($)</label>
+          <input type="number" step="0.01" id="editCost" name="purchaseCost" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editDesc">Description</label>
+          <textarea id="editDesc" name="description" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editSpecs">Specifications</label>
+          <textarea id="editSpecs" name="specifications" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeEditStockModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Replenish Stock Quantity -->
+<div id="replenishModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="mono-label">STOCK REPLENISHMENT</span>
+        <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+          Replenish Units (<span id="replenishAssetTag"></span>)
+        </h3>
+      </div>
+      <button type="button" onclick="closeReplenishStockModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-400);">&times;</button>
+    </div>
+
+    <form action="/supplier/replenish" method="POST">
+      <div class="modal-body">
+        <input type="hidden" id="replenishAssetId" name="assetId">
+
+        <div style="background: var(--stone-50); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--stone-200); margin-bottom: 1rem;">
+          <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--stone-400);">EQUIPMENT:</div>
+          <div style="font-weight: 700; color: var(--stone-900);" id="replenishAssetName"></div>
+          <div style="font-size: 0.75rem; color: var(--stone-500); margin-top: 3px;">
+            Current Total in Inventory: <strong id="replenishCurrentQty"></strong> units
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="additionalQuantity">Units to Add to Stock *</label>
+          <input type="number" id="additionalQuantity" name="additionalQuantity" class="form-control" min="1" value="5" required>
+          <small style="color: var(--stone-400); font-size: 0.725rem;">This will increment total and available units simultaneously.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeReplenishStockModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Confirm Replenishment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script id="inventoryData" type="application/json">
+  <%- JSON.stringify(assets) %>
+</script>
+
+<script>
+let inventoryCatalog = [];
+try {
+  inventoryCatalog = JSON.parse(document.getElementById('inventoryData').textContent || '[]');
+} catch (e) {
+  console.error('Failed to parse inventory data:', e);
+}
+
+function openNewStockModal() {
+  const modal = document.getElementById('newStockModal');
+  if (modal) {
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+  }
+}
+
+function closeNewStockModal() {
+  const modal = document.getElementById('newStockModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function closeEditStockModal() {
+  const modal = document.getElementById('editStockModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function closeReplenishStockModal() {
+  const modal = document.getElementById('replenishModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function openEditStockModal(target, fallbackId) {
+  let item = null;
+  let id = fallbackId;
+
+  // 1. Direct read from button dataset
+  if (target && target.dataset && target.dataset.id) {
+    id = target.dataset.id;
+    item = {
+      _id: target.dataset.id,
+      assetTag: target.dataset.tag,
+      name: target.dataset.name,
+      category: target.dataset.category,
+      labLocation: target.dataset.location,
+      condition: target.dataset.condition,
+      quantity: target.dataset.quantity,
+      manufacturer: target.dataset.mfr,
+      modelNumber: target.dataset.model,
+      purchaseCost: target.dataset.cost,
+      description: target.dataset.desc,
+      specifications: target.dataset.specs
+    };
+  }
+
+  // 2. If target is a string id
+  if (!item && typeof target === 'string') {
+    id = target;
+  }
+
+  // 3. Search DOM by data-id
+  if (!item && id) {
+    const btn = document.querySelector(`button[data-id="${id}"]`);
+    if (btn && btn.dataset && btn.dataset.id) {
+      item = {
+        _id: btn.dataset.id,
+        assetTag: btn.dataset.tag,
+        name: btn.dataset.name,
+        category: btn.dataset.category,
+        labLocation: btn.dataset.location,
+        condition: btn.dataset.condition,
+        quantity: btn.dataset.quantity,
+        manufacturer: btn.dataset.mfr,
+        modelNumber: btn.dataset.model,
+        purchaseCost: btn.dataset.cost,
+        description: btn.dataset.desc,
+        specifications: btn.dataset.specs
+      };
+    }
+  }
+
+  // 4. Search inventoryCatalog
+  if (!item && inventoryCatalog && inventoryCatalog.length > 0 && id) {
+    item = inventoryCatalog.find(a => (a._id && a._id.toString() === String(id)) || a.assetTag === String(id));
+  }
+
+  if (!item) {
+    alert('Equipment item details could not be located.');
+    return;
+  }
+
+  const form = document.getElementById('editStockForm');
+  form.action = '/supplier/edit/' + (item._id || id);
+
+  document.getElementById('editAssetTagSpan').textContent = item.assetTag || '';
+  document.getElementById('editName').value = item.name || '';
+  document.getElementById('editCategory').value = item.category || 'General Lab Equipment';
+  document.getElementById('editLocation').value = item.labLocation || '';
+  document.getElementById('editCondition').value = item.condition || 'Good';
+  document.getElementById('editQuantity').value = item.quantity !== undefined ? item.quantity : 1;
+  document.getElementById('editMfr').value = item.manufacturer || '';
+  document.getElementById('editModel').value = item.modelNumber || '';
+  document.getElementById('editCost').value = item.purchaseCost !== undefined ? item.purchaseCost : 0;
+  document.getElementById('editDesc').value = item.description || '';
+  document.getElementById('editSpecs').value = item.specifications || '';
+
+  const modal = document.getElementById('editStockModal');
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function openReplenishStockModal(target, fallbackId) {
+  let item = null;
+  let id = fallbackId;
+
+  if (target && target.dataset && target.dataset.id) {
+    id = target.dataset.id;
+    item = {
+      _id: target.dataset.id,
+      assetTag: target.dataset.tag,
+      name: target.dataset.name,
+      quantity: target.dataset.quantity
+    };
+  }
+
+  if (!item && typeof target === 'string') {
+    id = target;
+  }
+
+  if (!item && id) {
+    const btn = document.querySelector(`button[data-id="${id}"]`);
+    if (btn && btn.dataset && btn.dataset.id) {
+      item = {
+        _id: btn.dataset.id,
+        assetTag: btn.dataset.tag,
+        name: btn.dataset.name,
+        quantity: btn.dataset.quantity
+      };
+    }
+  }
+
+  if (!item && inventoryCatalog && inventoryCatalog.length > 0 && id) {
+    item = inventoryCatalog.find(a => (a._id && a._id.toString() === String(id)) || a.assetTag === String(id));
+  }
+
+  if (!item) {
+    alert('Equipment item details could not be located.');
+    return;
+  }
+
+  document.getElementById('replenishAssetId').value = item._id || id;
+  document.getElementById('replenishAssetTag').textContent = item.assetTag || '';
+  document.getElementById('replenishAssetName').textContent = item.name || '';
+  document.getElementById('replenishCurrentQty').textContent = item.quantity || 0;
+  document.getElementById('additionalQuantity').value = 5;
+
+  const modal = document.getElementById('replenishModal');
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+</script>
+
+<%- include('../partials/footer') %>

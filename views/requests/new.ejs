@@ -1,0 +1,151 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <a href="/assets">Equipment Catalog</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Request Equipment</span>
+</div>
+
+<div style="max-width: 760px; margin: 0 auto 3rem;">
+  <div class="card" style="padding: 2rem;">
+    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--stone-100);">
+      <span class="mono-label">REQUISITION ORDER DESK</span>
+      <h1 style="font-family: var(--font-heading); font-size: 1.625rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+        Request Equipment Checkout
+      </h1>
+      <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+        Submit a formal institutional checkout requisition for lab apparatus or research instruments.
+      </p>
+    </div>
+
+    <form action="/requests/new" method="POST">
+      <!-- Equipment Selector / Display -->
+      <div class="form-group">
+        <label class="form-label" for="assetId">Target Equipment / Instrument *</label>
+        <% if (selectedAsset) { %>
+          <input type="hidden" name="assetId" value="<%= selectedAsset._id %>">
+          
+          <!-- Selected Equipment Summary Card -->
+          <div style="background: var(--stone-50); border: 1px solid var(--stone-200); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+              <div>
+                <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= selectedAsset.assetTag %></span>
+                <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0.35rem 0 0.25rem;">
+                  <%= selectedAsset.name %>
+                </h3>
+                <div style="font-size: 0.8125rem; color: var(--stone-500);">
+                  <%= selectedAsset.manufacturer || 'Lab Catalog' %> · Model: <%= selectedAsset.modelNumber || 'N/A' %> · Location: <strong><%= selectedAsset.labLocation %></strong>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge badge-good" style="font-size: 0.8125rem;">
+                  <%= selectedAsset.availableQuantity %> / <%= selectedAsset.quantity %> Available
+                </span>
+                <div style="margin-top: 6px;">
+                  <a href="/requests/new" style="font-size: 0.75rem; color: var(--primary-600); text-decoration: none;">Change equipment &rarr;</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } else { %>
+          <select id="assetId" name="assetId" class="form-control filter-select" required style="width: 100%; font-size: 0.875rem;" onchange="updateSelectedEquipmentInfo(this)">
+            <option value="">-- Select apparatus from inventory catalog --</option>
+            <% availableAssets.forEach(a => { %>
+              <option 
+                value="<%= a._id %>"
+                data-tag="<%= a.assetTag %>"
+                data-name="<%= a.name %>"
+                data-avail="<%= a.availableQuantity %>"
+                data-loc="<%= a.labLocation %>"
+              >
+                [<%= a.assetTag %>] <%= a.name %> — (<%= a.availableQuantity %> free at <%= a.labLocation %>)
+              </option>
+            <% }) %>
+          </select>
+          <small style="color: var(--stone-400); font-size: 0.725rem; display: block; margin-top: 4px;">
+            Only items with operational status and available stock are listed.
+          </small>
+        <% } %>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <!-- Requested Quantity -->
+        <div class="form-group">
+          <label class="form-label" for="quantity">Quantity to Request *</label>
+          <input 
+            type="number" 
+            id="quantity" 
+            name="quantity" 
+            class="form-control" 
+            min="1" 
+            max="<%= selectedAsset ? selectedAsset.availableQuantity : 10 %>" 
+            value="1" 
+            required
+            style="font-family: var(--font-mono); font-weight: 600;"
+          >
+          <small style="color: var(--stone-400); font-size: 0.725rem;">Number of physical units required for the experiment.</small>
+        </div>
+
+        <!-- Expected Return Date -->
+        <div class="form-group">
+          <label class="form-label" for="expectedReturnDate">Expected Return Date *</label>
+          <input 
+            type="date" 
+            id="expectedReturnDate" 
+            name="expectedReturnDate" 
+            class="form-control" 
+            value="<%= defaultReturnDate %>" 
+            min="<%= new Date().toISOString().split('T')[0] %>"
+            required
+            style="font-family: var(--font-mono);"
+          >
+          <small style="color: var(--stone-400); font-size: 0.725rem;">Standard checkout allocation is up to 14 days.</small>
+        </div>
+      </div>
+
+      <!-- Research Purpose -->
+      <div class="form-group">
+        <label class="form-label" for="purpose">Research / Coursework Protocol & Purpose *</label>
+        <textarea 
+          id="purpose" 
+          name="purpose" 
+          class="form-control" 
+          rows="3" 
+          placeholder="e.g. Master thesis kinetic spectrophotometry titration, Biochemistry Lab Session 4, or cell culture pellet centrifugation..." 
+          required
+        ></textarea>
+        <small style="color: var(--stone-400); font-size: 0.725rem;">This rationale is reviewed by the Lab In-charge prior to physical handover approval.</small>
+      </div>
+
+      <!-- Checkout Terms Box -->
+      <div style="background: var(--stone-50); border: 1px solid var(--stone-200); border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin-top: 1rem; font-size: 0.75rem; color: var(--stone-600);">
+        <div style="font-weight: 700; color: var(--stone-800); margin-bottom: 4px;">Institutional Handover Agreement:</div>
+        By submitting this requisition, you verify that you will adhere to laboratory safety protocols, maintain equipment calibration seals, and return apparatus to the Lab In-charge on or before the designated return date.
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--stone-100);">
+        <a href="/assets" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          Submit Requisition Order
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function updateSelectedEquipmentInfo(select) {
+  const opt = select.options[select.selectedIndex];
+  if (opt && opt.value) {
+    const maxAvail = parseInt(opt.dataset.avail, 10) || 1;
+    const qtyInput = document.getElementById('quantity');
+    if (qtyInput) {
+      qtyInput.max = maxAvail;
+    }
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

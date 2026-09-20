@@ -1,0 +1,259 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Requisition Management Desk</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <div class="mono-label">LAB IN-CHARGE & ADMIN DESK</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      Equipment Handover & Return Desk
+    </h1>
+    <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      Approve or decline requisitions, record checkout issues, and perform return condition triage.
+    </p>
+  </div>
+</div>
+
+<!-- Status Navigation Tabs -->
+<div style="display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--stone-200); padding-bottom: 0.75rem; overflow-x: auto;">
+  <a href="/requests/manage?status=All" class="btn btn-sm <%= currentStatus === 'All' ? 'btn-primary' : 'btn-secondary' %>">
+    All Requests
+  </a>
+  <a href="/requests/manage?status=Pending" class="btn btn-sm <%= currentStatus === 'Pending' ? 'btn-primary' : 'btn-secondary' %>">
+    Pending Approval (<%= stats.pending %>)
+  </a>
+  <a href="/requests/manage?status=Approved" class="btn btn-sm <%= currentStatus === 'Approved' ? 'btn-primary' : 'btn-secondary' %>">
+    Ready for Handover (<%= stats.approved %>)
+  </a>
+  <a href="/requests/manage?status=Issued" class="btn btn-sm <%= currentStatus === 'Issued' ? 'btn-primary' : 'btn-secondary' %>">
+    Currently In Use (<%= stats.issued %>)
+  </a>
+  <a href="/requests/manage?status=Returned" class="btn btn-sm <%= currentStatus === 'Returned' ? 'btn-primary' : 'btn-secondary' %>">
+    Returned & Triaged (<%= stats.returned %>)
+  </a>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Req Code</th>
+          <th>Equipment Items</th>
+          <th>Requester</th>
+          <th>Purpose</th>
+          <th>Expected Return</th>
+          <th>Status</th>
+          <th>Inspection & Handover Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (requests.length === 0) { %>
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--stone-400); padding: 3rem;">
+              No requisitions matching "<%= currentStatus %>" status.
+            </td>
+          </tr>
+        <% } %>
+        <% requests.forEach(req => { %>
+          <%
+            const isOverdue = req.status === 'Issued' && new Date() > new Date(req.expectedReturnDate);
+          %>
+          <tr style="<%= isOverdue ? 'background: #fff8f8;' : '' %>">
+            <td>
+              <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= req.requestCode %></span>
+              <div style="font-size: 0.725rem; color: var(--stone-400);"><%= new Date(req.createdAt).toLocaleDateString() %></div>
+            </td>
+            <td>
+              <% req.items.forEach(i => { %>
+                <div>
+                  <strong><%= i.assetName %></strong>
+                  <span class="mono-tag">(<%= i.assetTag %>) × <%= i.quantity %></span>
+                </div>
+              <% }) %>
+            </td>
+            <td>
+              <div style="font-weight: 600; color: var(--stone-800);"><%= req.requesterName %></div>
+              <span class="mono-tag"><%= req.requesterRole %></span>
+            </td>
+            <td style="max-width: 220px; font-size: 0.8125rem; color: var(--stone-600);">
+              <%= req.purpose %>
+            </td>
+            <td>
+              <div style="<%= isOverdue ? 'color: #dc2626; font-weight: 700;' : '' %>">
+                <%= new Date(req.expectedReturnDate).toLocaleDateString() %>
+              </div>
+              <% if (isOverdue) { %>
+                <span class="badge badge-overdue">OVERDUE</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (req.status === 'Pending') { %>
+                <span class="badge badge-fair">Pending</span>
+              <% } else if (req.status === 'Approved') { %>
+                <span class="badge badge-good">Approved</span>
+              <% } else if (req.status === 'Issued') { %>
+                <span class="badge badge-issued">Issued</span>
+              <% } else if (req.status === 'Returned') { %>
+                <span class="badge badge-good">Returned</span>
+              <% } else if (req.status === 'Rejected') { %>
+                <span class="badge badge-repair">Rejected</span>
+              <% } %>
+            </td>
+            <td>
+              <!-- Action Buttons based on status -->
+              <% if (req.status === 'Pending') { %>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <form action="/requests/<%= req._id %>/approve" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+                  </form>
+                  <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="reason" value="Declined by Lab In-charge">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Decline</button>
+                  </form>
+                </div>
+              <% } else if (req.status === 'Approved') { %>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <form action="/requests/<%= req._id %>/issue" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-primary" title="Record physical handover and decrement stock count">
+                      Record Handover / Issue
+                    </button>
+                  </form>
+                  <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="reason" value="Handover declined by Lab In-charge">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Decline equipment handover">
+                      Decline Handover
+                    </button>
+                  </form>
+                </div>
+              <% } else if (req.status === 'Issued') { %>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-sm btn-primary" onclick="openReturnModal('<%= req._id %>', '<%= req.requestCode %>')">
+                    Record Return & Triage
+                  </button>
+                  <form action="/requests/<%= req._id %>/reject" method="POST" style="display: inline;">
+                    <input type="hidden" name="reason" value="Handover revoked / inspection failed by Lab In-charge">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Revoke handover and return items to stock">
+                      Decline Handover
+                    </button>
+                  </form>
+                </div>
+              <% } else if (req.status === 'Returned') { %>
+                <div style="font-size: 0.75rem;">
+                  Condition: <strong><%= req.returnCondition %></strong>
+                  <div style="color: var(--stone-500);"><%= req.returnNotes || 'Inspected OK' %></div>
+                </div>
+              <% } else if (req.status === 'Rejected') { %>
+                <span style="font-size: 0.75rem; color: #b91c1c;"><%= req.rejectionReason || 'Declined' %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Record Return & Condition Triage (OK / Damaged / Lost) -->
+<div id="returnModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+        Record Equipment Return (<span id="returnReqCodeSpan"></span>)
+      </h3>
+      <button type="button" onclick="closeReturnModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-400);">&times;</button>
+    </div>
+
+    <form id="returnForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="returnCondition">Equipment Return Condition *</label>
+          <select class="form-control filter-select" id="returnCondition" name="returnCondition" required style="width: 100%;">
+            <option value="OK" selected>OK — Good Working Condition (Returned to available pool)</option>
+            <option value="Damaged">Damaged — Needs Repair/Recalibration (Flagged for Maintenance)</option>
+            <option value="Lost">Lost — Unrecoverable Asset (Decommissioned from total stock)</option>
+          </select>
+          <small style="color: var(--stone-400); font-size: 0.725rem; display: block; margin-top: 4px;">
+            Selecting 'Damaged' alerts maintenance. 'Lost' reduces total asset quantity permanently.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="returnNotes">Return Inspection Notes & Triage Assessment</label>
+          <textarea class="form-control" id="returnNotes" name="returnNotes" rows="3" placeholder="Note physical cleanliness, lens clarity, calibration check, missing cables, etc..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeReturnModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Confirm Return & Update Stock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Decline Request -->
+<div id="rejectModal" class="modal-backdrop">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 style="font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700; color: var(--stone-900); margin: 0;">
+        Decline Requisition / Handover (<span id="rejectReqCodeSpan"></span>)
+      </h3>
+      <button type="button" onclick="closeRejectModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--stone-400);">&times;</button>
+    </div>
+
+    <form id="rejectForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="rejectionReason">Reason for Declining</label>
+          <textarea class="form-control" id="rejectionReason" name="reason" rows="3" placeholder="Explain reason for declining (e.g. scheduling conflict, reserved for maintenance, prerequisite training required)..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeRejectModal()">Cancel</button>
+        <button type="submit" class="btn btn-outline-danger btn-sm">Confirm Decline</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function closeReturnModal() {
+  const modal = document.getElementById('returnModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function closeRejectModal() {
+  const modal = document.getElementById('rejectModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+function openReturnModal(id, code) {
+  document.getElementById('returnForm').action = '/requests/' + id + '/return';
+  document.getElementById('returnReqCodeSpan').textContent = code;
+  const modal = document.getElementById('returnModal');
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+
+function openRejectModal(id, code) {
+  document.getElementById('rejectForm').action = '/requests/' + id + '/reject';
+  document.getElementById('rejectReqCodeSpan').textContent = code;
+  const modal = document.getElementById('rejectModal');
+  modal.classList.add('open');
+  modal.style.display = 'flex';
+}
+</script>
+
+<%- include('../partials/footer') %>

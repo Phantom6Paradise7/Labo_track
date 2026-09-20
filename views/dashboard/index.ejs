@@ -1,0 +1,255 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Operational Dashboard</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <div class="mono-label">PS 8 INSTITUTIONAL ASSET MANAGEMENT</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      Laboratory Equipment & Asset Overview
+    </h1>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'lab_incharge')) { %>
+      <a href="/assets/new?from=supplier" class="btn btn-primary btn-sm">+ Add New Stock Item</a>
+      <a href="/requests/order-info" class="btn btn-secondary btn-sm">Order Information</a>
+      <a href="/requests/manage" class="btn btn-secondary btn-sm">Requisition Desk</a>
+      <a href="/supplier" class="btn btn-secondary btn-sm">Stock Management</a>
+    <% } else if (currentUser && (currentUser.role === 'requester' || currentUser.role === 'staff' || currentUser.role === 'student')) { %>
+      <a href="/requests/new" class="btn btn-primary btn-sm">+ Request Equipment</a>
+      <a href="/requests/my-requests" class="btn btn-secondary btn-sm">My Orders & Assets</a>
+    <% } %>
+    <a href="/assets" class="btn btn-secondary btn-sm">Equipment Catalog</a>
+  </div>
+</div>
+
+<!-- PS 8 Core Metrics Grid -->
+<div class="metrics-grid">
+  <!-- Total Assets -->
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Total Equipment Stock</div>
+    <div class="metric-value"><%= metrics.totalUnits %></div>
+    <div class="metric-sub"><%= metrics.totalAssets %> unique catalog models</div>
+  </div>
+
+  <!-- Available Units -->
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Available for Issue</div>
+    <div class="metric-value" style="color: var(--status-good);"><%= metrics.availableUnits %></div>
+    <div class="metric-sub">Ready for student & staff checkouts</div>
+  </div>
+
+  <!-- Issued Units -->
+  <div class="metric-card accent-blue">
+    <div class="metric-title">Currently Issued</div>
+    <div class="metric-value" style="color: var(--status-issued);"><%= metrics.issuedUnits %></div>
+    <div class="metric-sub">Active in research labs</div>
+  </div>
+
+  <!-- Overdue Returns (Core Flag) -->
+  <div class="metric-card <%= overdueRequests.length > 0 ? 'accent-rose' : 'accent-emerald' %>">
+    <div class="metric-title">Overdue Returns</div>
+    <div class="metric-value" style="color: <%= overdueRequests.length > 0 ? '#ef4444' : 'var(--status-good)' %>;">
+      <%= overdueRequests.length %>
+    </div>
+    <div class="metric-sub">
+      <%= overdueRequests.length > 0 ? '⚠️ Action Required: Return Overdue Equipment' : 'All returns within schedule' %>
+    </div>
+  </div>
+
+  <!-- Damaged / Under Repair -->
+  <div class="metric-card accent-rose">
+    <div class="metric-title">Damaged / In Repair</div>
+    <div class="metric-value" style="color: var(--status-danger);"><%= metrics.damagedCount %></div>
+    <div class="metric-sub">Pending technician servicing</div>
+  </div>
+</div>
+
+<!-- Overdue Returns Alert Section -->
+<% if (overdueRequests && overdueRequests.length > 0) { %>
+  <div class="card" style="border-left: 4px solid var(--status-danger); background: #fffcfc;">
+    <div class="card-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge badge-overdue">FLAGGED OVERDUE</span>
+        <h3 class="card-title" style="color: #991b1b; margin: 0;">Equipment Past Expected Return Date</h3>
+      </div>
+      <span class="mono-tag"><%= overdueRequests.length %> item(s) overdue</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Requisition #</th>
+            <th>Equipment Name</th>
+            <th>Requester</th>
+            <th>Expected Return</th>
+            <th>Days Overdue</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% overdueRequests.forEach(req => { %>
+            <%
+              const diffMs = new Date() - new Date(req.expectedReturnDate);
+              const daysOverdue = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            %>
+            <tr>
+              <td><span class="mono-tag" style="font-weight: 600;"><%= req.requestCode %></span></td>
+              <td>
+                <% req.items.forEach(i => { %>
+                  <div><strong><%= i.assetName %></strong> <span class="mono-tag">(<%= i.assetTag %>) × <%= i.quantity %></span></div>
+                <% }) %>
+              </td>
+              <td><%= req.requesterName %> (<%= req.requesterRole %>)</td>
+              <td style="color: #dc2626; font-weight: 600;">
+                <%= new Date(req.expectedReturnDate).toLocaleDateString() %>
+              </td>
+              <td>
+                <span class="badge badge-overdue"><%= daysOverdue %> day(s) late</span>
+              </td>
+              <td>
+                <% if (currentUser && (currentUser.role === 'lab_incharge' || currentUser.role === 'admin')) { %>
+                  <a href="/requests/manage" class="btn btn-sm btn-outline-danger">Log Return / Triage</a>
+                <% } else { %>
+                  <span class="mono-tag">Pending Return</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<!-- Two Column Layout: Active Issues & Category Distribution -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+  <!-- Active Issued Equipment -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Recent Equipment Requisitions</h3>
+      <a href="<%= currentUser && currentUser.role === 'requester' ? '/requests/my-requests' : '/requests/manage' %>" class="btn btn-sm btn-secondary">View All</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Req Code</th>
+            <th>Asset</th>
+            <th>Requester</th>
+            <th>Return Due</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (activeIssuedRequests.length === 0 && pendingApprovalRequests.length === 0) { %>
+            <tr><td colspan="5" style="text-align: center; color: var(--stone-400); padding: 2rem;">No active equipment issues recorded.</td></tr>
+          <% } %>
+          <% [...pendingApprovalRequests, ...activeIssuedRequests].slice(0, 5).forEach(req => { %>
+            <tr>
+              <td><span class="mono-tag"><%= req.requestCode %></span></td>
+              <td>
+                <%= req.items.map(i => i.assetName).join(', ') %>
+              </td>
+              <td><%= req.requesterName %></td>
+              <td><%= new Date(req.expectedReturnDate).toLocaleDateString() %></td>
+              <td>
+                <% if (req.status === 'Pending') { %>
+                  <span class="badge badge-fair">Pending Approval</span>
+                <% } else if (req.status === 'Issued') { %>
+                  <span class="badge badge-issued">Issued</span>
+                <% } else { %>
+                  <span class="badge badge-good"><%= req.status %></span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h3 class="card-title">Category Distribution</h3>
+    </div>
+    <div style="space-y: 12px;">
+      <% Object.keys(categoryDistribution).forEach(cat => { %>
+        <% const pct = Math.round((categoryDistribution[cat] / metrics.totalUnits) * 100) || 0; %>
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; margin-bottom: 3px;">
+            <span style="font-weight: 500; color: var(--stone-700);"><%= cat %></span>
+            <span class="mono-tag"><%= categoryDistribution[cat] %> units (<%= pct %>%)</span>
+          </div>
+          <div style="height: 6px; background: var(--stone-100); border-radius: 3px; overflow: hidden;">
+            <div style="height: 100%; width: <%= pct %>%; background: var(--primary-600);"></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<!-- Stretch Goal: Asset Maintenance Log -->
+<div class="card">
+  <div class="card-header">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="mono-label">ASSIGNMENT STRETCH GOAL</span>
+      <h3 class="card-title" style="margin: 0;">Asset Maintenance & Service Tracking</h3>
+    </div>
+    <span class="mono-tag">Next Service Schedules & Costs</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Asset Tag</th>
+          <th>Service Type</th>
+          <th>Technician</th>
+          <th>Service Date</th>
+          <th>Cost</th>
+          <th>Next Service Due</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (recentMaintenance.length === 0) { %>
+          <tr><td colspan="7" style="text-align: center; color: var(--stone-400); padding: 2rem;">No maintenance records scheduled.</td></tr>
+        <% } %>
+        <% recentMaintenance.forEach(log => { %>
+          <tr>
+            <td><span class="mono-tag" style="font-weight: 600;"><%= log.assetTag %></span></td>
+            <td><%= log.serviceType %></td>
+            <td><%= log.technician %></td>
+            <td><%= new Date(log.serviceDate).toLocaleDateString() %></td>
+            <td>$<%= (log.cost || 0).toFixed(2) %></td>
+            <td>
+              <span style="font-weight: 600; color: var(--stone-800);">
+                <%= new Date(log.nextServiceDue).toLocaleDateString() %>
+              </span>
+            </td>
+            <td>
+              <% if (log.status === 'Completed') { %>
+                <span class="badge badge-good">Completed</span>
+              <% } else if (log.status === 'In Progress') { %>
+                <span class="badge badge-fair">In Progress</span>
+              <% } else { %>
+                <span class="badge badge-issued"><%= log.status %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

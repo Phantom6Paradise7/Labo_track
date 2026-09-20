@@ -1,0 +1,167 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Order Information</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <div class="mono-label">CENTRAL DISPATCH & AUDIT LOG</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      Order Information & Intake Registry
+    </h1>
+    <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      Comprehensive institutional ledger of all equipment orders placed, active checkouts, and received returns.
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <a href="/requests/manage" class="btn btn-secondary btn-sm">Requisition Desk & Handover</a>
+    <a href="/supplier" class="btn btn-secondary btn-sm">Stock Management</a>
+  </div>
+</div>
+
+<!-- Order Summary Statistics Grid -->
+<div class="metrics-grid" style="margin-bottom: 2rem;">
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Total Orders Placed</div>
+    <div class="metric-value"><%= stats.totalOrders %></div>
+    <div class="metric-sub">Cumulative requisitions recorded</div>
+  </div>
+
+  <div class="metric-card accent-amber">
+    <div class="metric-title">Orders In-Review</div>
+    <div class="metric-value" style="color: var(--status-warning);"><%= stats.placedPending %></div>
+    <div class="metric-sub">Requisitions awaiting approval</div>
+  </div>
+
+  <div class="metric-card accent-blue">
+    <div class="metric-title">Currently Handed Over (In-Use)</div>
+    <div class="metric-value" style="color: var(--status-issued);"><%= stats.inHandReceived %></div>
+    <div class="metric-sub">Units active with requesters</div>
+  </div>
+
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Orders Received Back</div>
+    <div class="metric-value" style="color: var(--status-good);"><%= stats.returnedReceived %></div>
+    <div class="metric-sub">Safely checked back into inventory</div>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="tab-pills" style="margin-bottom: 1.25rem; display: flex; gap: 6px; flex-wrap: wrap;">
+  <a href="/requests/order-info?status=All" class="btn btn-sm <%= currentStatus === 'All' ? 'btn-primary' : 'btn-secondary' %>">
+    All Orders (<%= stats.totalOrders %>)
+  </a>
+  <a href="/requests/order-info?status=Pending" class="btn btn-sm <%= currentStatus === 'Pending' ? 'btn-primary' : 'btn-secondary' %>">
+    Orders Placed / Pending (<%= stats.placedPending %>)
+  </a>
+  <a href="/requests/order-info?status=Approved" class="btn btn-sm <%= currentStatus === 'Approved' ? 'btn-primary' : 'btn-secondary' %>">
+    Approved / Ready (<%= stats.approved %>)
+  </a>
+  <a href="/requests/order-info?status=Issued" class="btn btn-sm <%= currentStatus === 'Issued' ? 'btn-primary' : 'btn-secondary' %>">
+    In-Use / Dispatched (<%= stats.inHandReceived %>)
+  </a>
+  <a href="/requests/order-info?status=Returned" class="btn btn-sm <%= currentStatus === 'Returned' ? 'btn-primary' : 'btn-secondary' %>">
+    Received Back / Returned (<%= stats.returnedReceived %>)
+  </a>
+  <a href="/requests/order-info?status=Rejected" class="btn btn-sm <%= currentStatus === 'Rejected' ? 'btn-primary' : 'btn-secondary' %>">
+    Declined (<%= stats.declined %>)
+  </a>
+</div>
+
+<!-- Orders Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Order Code</th>
+          <th>Ordered Equipment</th>
+          <th>Requester Details</th>
+          <th>Research Purpose</th>
+          <th>Order Placed</th>
+          <th>Target / Return Date</th>
+          <th>Order Status</th>
+          <th>Intake / Return Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (orders.length === 0) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--stone-400); padding: 3rem;">
+              No orders found matching the selected filter.
+            </td>
+          </tr>
+        <% } else { %>
+          <% orders.forEach(req => { %>
+            <%
+              const isOverdue = req.status === 'Issued' && new Date() > new Date(req.expectedReturnDate);
+            %>
+            <tr style="<%= isOverdue ? 'background: #fffafa;' : '' %>">
+              <td>
+                <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= req.requestCode %></span>
+              </td>
+              <td>
+                <% req.items.forEach(item => { %>
+                  <div>
+                    <strong style="color: var(--stone-900);"><%= item.assetName %></strong>
+                    <span class="mono-tag">(<%= item.assetTag %>) × <%= item.quantity %></span>
+                  </div>
+                <% }) %>
+              </td>
+              <td>
+                <div style="font-weight: 600; color: var(--stone-900);"><%= req.requesterName || 'Institutional User' %></div>
+                <div style="font-size: 0.725rem; color: var(--stone-400);"><%= req.department || 'Academic Lab' %> · <%= req.requesterRole %></div>
+              </td>
+              <td style="max-width: 240px; font-size: 0.8125rem; color: var(--stone-600);">
+                <%= req.purpose %>
+              </td>
+              <td>
+                <span style="font-size: 0.8125rem; color: var(--stone-700);"><%= new Date(req.createdAt).toLocaleDateString() %></span>
+              </td>
+              <td>
+                <div style="<%= isOverdue ? 'color: #dc2626; font-weight: 700;' : 'color: var(--stone-800);' %> font-size: 0.8125rem;">
+                  <%= new Date(req.expectedReturnDate).toLocaleDateString() %>
+                </div>
+                <% if (isOverdue) { %>
+                  <span class="badge badge-overdue" style="margin-top: 2px;">Overdue</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (req.status === 'Pending') { %>
+                  <span class="badge badge-fair">Order Placed (Pending)</span>
+                <% } else if (req.status === 'Approved') { %>
+                  <span class="badge badge-good">Approved for Issue</span>
+                <% } else if (req.status === 'Issued') { %>
+                  <span class="badge badge-issued">Dispatched (In Use)</span>
+                <% } else if (req.status === 'Returned') { %>
+                  <span class="badge badge-good">Received Back</span>
+                <% } else if (req.status === 'Rejected') { %>
+                  <span class="badge badge-repair">Declined</span>
+                <% } %>
+              </td>
+              <td style="font-size: 0.75rem;">
+                <% if (req.status === 'Returned') { %>
+                  <div>Received Condition: <strong><%= req.returnCondition || 'OK' %></strong></div>
+                  <div style="color: var(--stone-500);"><%= req.actualReturnDate ? 'Received on ' + new Date(req.actualReturnDate).toLocaleDateString() : 'Inspected' %></div>
+                <% } else if (req.status === 'Issued') { %>
+                  <div style="color: var(--status-issued); font-weight: 600;">Handed over on <%= req.issuedAt ? new Date(req.issuedAt).toLocaleDateString() : 'Issued' %></div>
+                  <div style="color: var(--stone-400);">By <%= req.reviewerName || 'Lab In-charge' %></div>
+                <% } else if (req.status === 'Rejected') { %>
+                  <div style="color: #b91c1c;"><%= req.rejectionReason || 'Declined' %></div>
+                <% } else { %>
+                  <span style="color: var(--stone-400);">Awaiting physical intake</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

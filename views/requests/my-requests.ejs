@@ -1,0 +1,272 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">My Orders & Equipment</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+  <div>
+    <div class="mono-label">STUDENT & RESEARCHER DESK</div>
+    <h1 style="font-family: var(--font-heading); font-size: 1.875rem; font-weight: 800; color: var(--stone-900); margin-top: 0.35rem;">
+      My Orders & Equipment
+    </h1>
+    <p style="font-size: 0.8125rem; color: var(--stone-500); margin-top: 0.25rem;">
+      View items you currently possess in lab, track pending checkout orders, and inspect your order history.
+    </p>
+  </div>
+
+  <div style="display: flex; gap: 8px;">
+    <a href="/requests/new" class="btn btn-primary btn-sm">+ Request Equipment</a>
+    <a href="/assets" class="btn btn-secondary btn-sm">Browse Catalog</a>
+  </div>
+</div>
+
+<!-- Requester Metrics Summary -->
+<div class="metrics-grid" style="margin-bottom: 2rem;">
+  <div class="metric-card accent-blue">
+    <div class="metric-title">What I Currently Own</div>
+    <div class="metric-value" style="color: var(--status-issued);"><%= currentlyOwned ? currentlyOwned.length : 0 %></div>
+    <div class="metric-sub">Active apparatus in your physical custody</div>
+  </div>
+
+  <div class="metric-card accent-emerald">
+    <div class="metric-title">Ordered & In-Review</div>
+    <div class="metric-value"><%= orderedPending ? orderedPending.length : 0 %></div>
+    <div class="metric-sub">Orders awaiting review or ready for handover</div>
+  </div>
+
+  <div class="metric-card accent-stone">
+    <div class="metric-title">Past Order History</div>
+    <div class="metric-value"><%= pastOrders ? pastOrders.length : 0 %></div>
+    <div class="metric-sub">Concluded checkouts and returned items</div>
+  </div>
+</div>
+
+<!-- SECTION 1: WHAT I CURRENTLY OWN (IN-HAND ASSETS) -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2rem; border-top: 3px solid var(--status-issued);">
+  <div class="card-header" style="padding: 1rem 1.25rem; margin-bottom: 0; background: #f0fdfa;">
+    <div>
+      <h3 class="card-title" style="color: #0f766e; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <span>📦</span> What I Currently Own (Active In-Hand Assets)
+      </h3>
+      <div style="font-size: 0.75rem; color: var(--stone-500); margin-top: 2px;">
+        Physical laboratory instruments currently checked out in your custody.
+      </div>
+    </div>
+    <span class="mono-tag" style="background: white;"><%= currentlyOwned ? currentlyOwned.length : 0 %> Active Possession(s)</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Requisition #</th>
+          <th>Apparatus In Possession</th>
+          <th>Handover Issue Date</th>
+          <th>Return Deadline</th>
+          <th>Status</th>
+          <th>Issued By / Handover Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!currentlyOwned || currentlyOwned.length === 0) { %>
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--stone-400); padding: 2.5rem;">
+              You currently do not have any lab apparatus in possession.
+              <div style="margin-top: 8px;">
+                <a href="/requests/new" class="btn btn-sm btn-primary">+ Request Equipment Issue</a>
+              </div>
+            </td>
+          </tr>
+        <% } else { %>
+          <% currentlyOwned.forEach(req => { %>
+            <%
+              const diffMs = new Date(req.expectedReturnDate) - new Date();
+              const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+              const isOverdue = daysLeft < 0;
+            %>
+            <tr style="<%= isOverdue ? 'background: #fffafa;' : '' %>">
+              <td>
+                <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= req.requestCode %></span>
+              </td>
+              <td>
+                <% req.items.forEach(item => { %>
+                  <div>
+                    <strong style="color: var(--stone-900);"><%= item.assetName %></strong>
+                    <span class="mono-tag">(<%= item.assetTag %>) × <%= item.quantity %></span>
+                  </div>
+                <% }) %>
+              </td>
+              <td>
+                <span style="font-size: 0.8125rem;"><%= req.issuedAt ? new Date(req.issuedAt).toLocaleDateString() : new Date(req.createdAt).toLocaleDateString() %></span>
+              </td>
+              <td>
+                <div style="<%= isOverdue ? 'color: #dc2626; font-weight: 700;' : 'color: var(--stone-800); font-weight: 600;' %>">
+                  <%= new Date(req.expectedReturnDate).toLocaleDateString() %>
+                </div>
+                <% if (isOverdue) { %>
+                  <span class="badge badge-overdue" style="margin-top: 3px;">Overdue by <%= Math.abs(daysLeft) %> day(s)</span>
+                <% } else { %>
+                  <span style="font-size: 0.725rem; color: var(--stone-400);"><%= daysLeft %> day(s) remaining</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="badge badge-issued">Currently In Hand</span>
+              </td>
+              <td style="font-size: 0.775rem;">
+                <div>Handed over by: <strong><%= req.reviewerName || 'Lab In-charge' %></strong></div>
+                <div style="color: var(--stone-500); margin-top: 2px;">Purpose: <%= req.purpose %></div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION 2: MY ORDERS (PENDING & APPROVED REQUISITIONS) -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2rem; border-top: 3px solid var(--primary-600);">
+  <div class="card-header" style="padding: 1rem 1.25rem; margin-bottom: 0;">
+    <div>
+      <h3 class="card-title" style="color: var(--stone-900); margin: 0; display: flex; align-items: center; gap: 8px;">
+        <span>⏳</span> Ordered & In-Review (Pending & Approved Requisitions)
+      </h3>
+      <div style="font-size: 0.75rem; color: var(--stone-500); margin-top: 2px;">
+        Orders currently awaiting verification or approved for physical handover collection.
+      </div>
+    </div>
+    <span class="mono-tag"><%= orderedPending ? orderedPending.length : 0 %> Active Order(s)</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Order Code</th>
+          <th>Ordered Equipment</th>
+          <th>Research Purpose</th>
+          <th>Target Return Date</th>
+          <th>Order Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!orderedPending || orderedPending.length === 0) { %>
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--stone-400); padding: 2.5rem;">
+              No pending orders. All submitted requisitions have been processed.
+            </td>
+          </tr>
+        <% } else { %>
+          <% orderedPending.forEach(req => { %>
+            <tr>
+              <td>
+                <span class="mono-tag" style="font-weight: 700; color: var(--stone-900);"><%= req.requestCode %></span>
+                <div style="font-size: 0.725rem; color: var(--stone-400); margin-top: 2px;"><%= new Date(req.createdAt).toLocaleDateString() %></div>
+              </td>
+              <td>
+                <% req.items.forEach(item => { %>
+                  <div>
+                    <strong style="color: var(--stone-900);"><%= item.assetName %></strong>
+                    <span class="mono-tag">(<%= item.assetTag %>) × <%= item.quantity %></span>
+                  </div>
+                <% }) %>
+              </td>
+              <td style="max-width: 280px; font-size: 0.8125rem; color: var(--stone-600);">
+                <%= req.purpose %>
+              </td>
+              <td>
+                <div style="font-size: 0.8125rem; color: var(--stone-800);"><%= new Date(req.expectedReturnDate).toLocaleDateString() %></div>
+              </td>
+              <td>
+                <% if (req.status === 'Pending') { %>
+                  <span class="badge badge-fair">Pending Review</span>
+                  <div style="font-size: 0.725rem; color: var(--stone-400); margin-top: 3px;">Under Lab In-charge assessment</div>
+                <% } else if (req.status === 'Approved') { %>
+                  <span class="badge badge-good">Approved (Ready for Handover)</span>
+                  <div style="font-size: 0.725rem; color: var(--primary-700); margin-top: 3px; font-weight: 600;">Visit lab desk to collect physical item</div>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION 3: PAST ORDER HISTORY (RETURNED & CONCLUDED) -->
+<div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
+  <div class="card-header" style="padding: 1rem 1.25rem; margin-bottom: 0;">
+    <div>
+      <h3 class="card-title" style="color: var(--stone-900); margin: 0; display: flex; align-items: center; gap: 8px;">
+        <span>📜</span> Past Order History (Returned & Concluded)
+      </h3>
+      <div style="font-size: 0.75rem; color: var(--stone-500); margin-top: 2px;">
+        Historical audit record of past equipment checkouts and return condition logs.
+      </div>
+    </div>
+    <span class="mono-tag"><%= pastOrders ? pastOrders.length : 0 %> Historical Log(s)</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Order Code</th>
+          <th>Equipment Items</th>
+          <th>Completed Date</th>
+          <th>Final Status</th>
+          <th>Inspection Condition / Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!pastOrders || pastOrders.length === 0) { %>
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--stone-400); padding: 2rem;">
+              No completed checkout history yet.
+            </td>
+          </tr>
+        <% } else { %>
+          <% pastOrders.forEach(req => { %>
+            <tr>
+              <td>
+                <span class="mono-tag" style="color: var(--stone-700);"><%= req.requestCode %></span>
+              </td>
+              <td>
+                <% req.items.forEach(item => { %>
+                  <div style="font-size: 0.8125rem;">
+                    <strong><%= item.assetName %></strong>
+                    <span class="mono-tag">(<%= item.assetTag %>) × <%= item.quantity %></span>
+                  </div>
+                <% }) %>
+              </td>
+              <td style="font-size: 0.8125rem;">
+                <%= req.actualReturnDate ? new Date(req.actualReturnDate).toLocaleDateString() : (req.updatedAt ? new Date(req.updatedAt).toLocaleDateString() : 'N/A') %>
+              </td>
+              <td>
+                <% if (req.status === 'Returned') { %>
+                  <span class="badge badge-good">Returned</span>
+                <% } else if (req.status === 'Rejected') { %>
+                  <span class="badge badge-repair">Declined</span>
+                <% } %>
+              </td>
+              <td style="font-size: 0.775rem;">
+                <% if (req.status === 'Returned') { %>
+                  <div>Triage: <strong><%= req.returnCondition %></strong></div>
+                  <div style="color: var(--stone-500);"><%= req.returnNotes || 'Inspected OK.' %></div>
+                <% } else if (req.status === 'Rejected') { %>
+                  <div style="color: #b91c1c;"><%= req.rejectionReason || 'Declined by Lab In-charge' %></div>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

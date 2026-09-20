@@ -1,0 +1,115 @@
+<%- include('../partials/header') %>
+
+<div class="breadcrumb">
+  <a href="/dashboard">Portal</a>
+  <span>/</span>
+  <a href="/assets">Catalog</a>
+  <span>/</span>
+  <a href="/assets/<%= asset._id %>"><%= asset.assetTag %></a>
+  <span>/</span>
+  <span style="color: var(--stone-800); font-weight: 500;">Edit</span>
+</div>
+
+<div style="max-width: 720px; margin: 0 auto;">
+  <div class="card" style="padding: 2rem;">
+    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--stone-100);">
+      <span class="mono-label"><%= currentUser && currentUser.role === 'supplier' ? 'SUPPLIER STOCK CONTROL' : 'ADMINISTRATION' %></span>
+      <h1 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--stone-900); margin-top: 0.35rem;">
+        Modify Equipment Record: <%= asset.assetTag %>
+      </h1>
+    </div>
+
+    <form action="/assets/<%= asset._id %>/edit?from=<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>" method="POST">
+      <input type="hidden" name="from" value="<%= (typeof from !== 'undefined' && from) ? from : 'supplier' %>">
+      <div class="form-group">
+        <label class="form-label">Asset Tag (Fixed)</label>
+        <input type="text" class="form-control" value="<%= asset.assetTag %>" disabled style="background: var(--stone-100); font-family: var(--font-mono);">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="name">Equipment Full Name *</label>
+        <input type="text" class="form-control" id="name" name="name" value="<%= asset.name %>" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="category">Category *</label>
+          <select class="form-control filter-select" id="category" name="category" required style="width: 100%;">
+            <% ['Analytical Instruments', 'Centrifuges', 'Microscopy', 'Liquid Handling', 'Safety & Containment', 'Spectrometry', 'General Lab Equipment'].forEach(c => { %>
+              <option value="<%= c %>" <%= asset.category === c ? 'selected' : '' %>><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="condition">Condition *</label>
+          <select class="form-control filter-select" id="condition" name="condition" required style="width: 100%;">
+            <% ['Good', 'Fair', 'Poor', 'Repair', 'Decommissioned'].forEach(cond => { %>
+              <option value="<%= cond %>" <%= asset.condition === cond ? 'selected' : '' %>><%= cond %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="labLocation">Lab / Facility Location *</label>
+          <input type="text" class="form-control" id="labLocation" name="labLocation" value="<%= asset.labLocation %>" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quantity">Total Units in Stock *</label>
+          <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="<%= asset.quantity %>" required>
+          <small style="color: var(--stone-400); font-size: 0.725rem;"><%= asset.quantity - asset.availableQuantity %> units currently issued.</small>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="building">Building</label>
+          <input type="text" class="form-control" id="building" name="building" value="<%= asset.building %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="floor">Floor</label>
+          <input type="text" class="form-control" id="floor" name="floor" value="<%= asset.floor %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="room">Room</label>
+          <input type="text" class="form-control" id="room" name="room" value="<%= asset.room %>">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="manufacturer">Manufacturer</label>
+          <input type="text" class="form-control" id="manufacturer" name="manufacturer" value="<%= asset.manufacturer %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modelNumber">Model Number</label>
+          <input type="text" class="form-control" id="modelNumber" name="modelNumber" value="<%= asset.modelNumber %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="purchaseCost">Purchase Cost ($)</label>
+          <input type="number" step="0.01" class="form-control" id="purchaseCost" name="purchaseCost" value="<%= asset.purchaseCost %>">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Detailed Description</label>
+        <textarea class="form-control" id="description" name="description" rows="2"><%= asset.description %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="specifications">Specifications / Operational Parameters</label>
+        <textarea class="form-control" id="specifications" name="specifications" rows="2"><%= asset.specifications %></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--stone-100);">
+        <a href="<%= (typeof from !== 'undefined' && from === 'catalog') ? '/assets/' + asset._id : '/supplier' %>" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

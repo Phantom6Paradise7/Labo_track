@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'LaboTrack — Asset Management for Research Labs' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dot-bg">
+
+<header class="site-header">
+  <div class="header-container">
+    <a href="/" class="brand-link">
+      <div class="brand-logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <span><span class="brand-name-labo">labo</span>track</span>
+    </a>
+
+    <nav>
+      <ul class="nav-links">
+        <% if (currentUser) { %>
+          <li><a href="/dashboard" class="nav-link <%= path === '/dashboard' ? 'active' : '' %>">Dashboard</a></li>
+          <li><a href="/assets" class="nav-link <%= path.startsWith('/assets') ? 'active' : '' %>">Equipment Catalog</a></li>
+
+          <% if (currentUser.role === 'admin' || currentUser.role === 'lab_incharge') { %>
+            <li><a href="/requests/order-info" class="nav-link <%= path.startsWith('/requests/order-info') ? 'active' : '' %>">Order Information</a></li>
+            <li><a href="/requests/manage" class="nav-link <%= path.startsWith('/requests/manage') ? 'active' : '' %>">Requisition Desk</a></li>
+            <li><a href="/supplier" class="nav-link <%= path.startsWith('/supplier') ? 'active' : '' %>">Stock Management</a></li>
+          <% } else { %>
+            <li><a href="/requests/my-requests" class="nav-link <%= path.startsWith('/requests/my-requests') ? 'active' : '' %>">My Orders & Assets</a></li>
+            <li><a href="/requests/new" class="btn btn-sm btn-primary">+ Request Equipment</a></li>
+          <% } %>
+        <% } else { %>
+          <li><a href="/auth/login" class="nav-link">Sign In</a></li>
+          <li><a href="/auth/register" class="btn btn-sm btn-primary">Join Lab</a></li>
+        <% } %>
+      </ul>
+    </nav>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <% if (currentUser) { %>
+        <div class="user-profile-badge">
+          <span style="font-weight: 600;"><%= currentUser.name %></span>
+          <span class="role-badge role-<%= currentUser.role %>">
+            <%= currentUser.role === 'lab_incharge' ? 'LAB IN-CHARGE' : (currentUser.role === 'admin' ? 'ADMIN' : 'STAFF / STUDENT') %>
+          </span>
+        </div>
+        <a href="/auth/logout" class="btn btn-sm btn-secondary" title="Sign out">Sign Out</a>
+      <% } else { %>
+        <a href="/auth/login" class="btn btn-sm btn-secondary">Sign In</a>
+      <% } %>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">
+  <%- include('alerts') %>
